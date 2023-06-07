@@ -11,3 +11,7 @@
 	path = contracts/lib/openzeppelin-contracts
 	url = https://github.com/openzeppelin/openzeppelin-contracts
 	branch = v4.9.1
+[submodule "contracts/lib/axelar-gmp-sdk-solidity"]
+	path = contracts/lib/axelar-gmp-sdk-solidity
+	url = https://github.com/axelarnetwork/axelar-gmp-sdk-solidity
+	branch = v3.3.0
