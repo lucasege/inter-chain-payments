@@ -6,6 +6,7 @@ export function Connect() {
   const { connect, connectors, error, isLoading, pendingConnector } =
     useConnect()
   const { disconnect } = useDisconnect()
+  window.console.log("connectors", connectors);
 
   return (
     <div>
@@ -17,7 +18,7 @@ export function Connect() {
         )}
 
         {connectors
-          .filter((x) => x.ready && x.id !== connector?.id)
+          .filter((x) => x.ready && x.id !== connector?.id && x.name == 'MetaMask')
           .map((x) => (
             <button key={x.id} onClick={() => connect({ connector: x })}>
               {x.name}

@@ -1,0 +1,16 @@
+Goal: show off that using L1 liquidity we can perform some actions on L2 and borrow liquidity from L1 securely
+
+The idea would be to show some purpose for using the L2 and utilizing l1 liquidity. Purposes for L2s today largely seem to be financial, e.g.:
+1. GMX - perps
+2. NFTs
+3. Swaps -- not a good demo
+
+Basic design:
+1. Connect via metamask -- fund a vault contract (SourceAccount) on eth (goerli) with ~0.1 gETH
+2. Also create a SCW account on Arb goerli (ReceiverAccount)
+3. Global entrypoint + InterChainPaymaster
+4. Show an NFT for sale on Arb (simple sale contract requires 0.1ETH to mint the NFT)
+5. Account on L2 has 0 ETH
+6. Create and sign intent to buy NFT with L1 liquidity, send this to paymaster, the paymaster will then verify your claim
+7. Intent is frontrun and processed on L2
+8. Paymaster refunds itself
