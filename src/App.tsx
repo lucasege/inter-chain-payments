@@ -4,7 +4,8 @@ import { Account } from './components/Account'
 import { Connect } from './components/Connect'
 import { Counter } from './components/Counter'
 import { NetworkSwitcher } from './components/NetworkSwitcher'
-import { SourceAccount } from './components/SourceAccount'
+import { SourceAccountDeploy } from './components/SourceAccount'
+import { ReceiverAccount } from './components/ReceiverAccount'
 
 export function App() {
   const { isConnected } = useAccount()
@@ -20,14 +21,13 @@ export function App() {
         <>
           <Account />
           <hr />
-          {/* Deploy SourceAccount on L1 */}
           {/* Allow depositing into SourceAccount on L1 */}
-          <SourceAccount />
+          <SourceAccountDeploy />
 
           <hr />
 
           {/* Deploy ReceiverAccount on L2 */}
-          {/* <ReceiverAccount /> */}
+          <ReceiverAccount />
 
           {/* Simple NFT deploy (if not exists) or interaction on l2 */}
           {/* <NFTWindow /> */}
