@@ -28,11 +28,6 @@ export const NFTWindow = () => {
     let web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
     const [userOperation, setUserOperation] = useState<IUserOperation | null>(null);
 
-
-    // let userOperation: IUserOperation | null = null;
-    // let userOperation: any = null;
-
-
     const nftAddress = import.meta.env.VITE_NFT_ADDRESS;
     const receiverAccountAddress = localStorage.getItem("ReceiverAccountAddress") as `0x${string}`;
     if (receiverAccountAddress == null) {
@@ -82,7 +77,6 @@ export const NFTWindow = () => {
     }
 
 
-    // UserOp(receiverAccountaddress, calldata: execute: safeMint)
     // Then call into metamask to sign this from the approved signer account
     // Then call Interchainpaymaster to simulate this transaction
     // const { config } = usePrepareSimpleNftMintNft({
@@ -119,14 +113,7 @@ const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setU
     React.useEffect(() => {
         ; (async () => {
             if (variables?.message && data) {
-                // const recoveredAddress = await recoverMessageAddress({
-                //     message: variables?.message,
-                //     signature: data,
-                // })
-                // console.log("Receoveredaddress", recoveredAddress);
-                // console.log("variables", variables);
                 if (userOp) {
-                    // userOperation.signature = data;
                     const newUserOp: IUserOperation = {
                         ...userOp,
                         signature: data,
@@ -135,8 +122,6 @@ const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setU
                     setUserOp(newUserOp);
                     console.log("User operation", userOp);
                 }
-                // setUserOperation(userOperation);
-                // setRecoveredAddress(recoveredAddress)
             }
         })()
     }, [data, variables?.message])
@@ -182,8 +167,6 @@ const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setU
                 setUserOp(newUserOp);
                 console.log("Sig from wallet client", sig);
             }
-
-            // signMessage({ message: hashData });
         }
     }
 
@@ -198,50 +181,28 @@ const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setU
 }
 
 const SimulateUserOP = ({ account, userOperation }: { account: `0x${string}` | undefined, userOperation: IUserOperation }) => {
-    let web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
-    const { connector } = useAccount();
-    const { data: walletClient } = useWalletClient();
-    // let wrapperUserOperation: MyIUserOperation = {
-    //     sender: "0x",
-    //     nonce: BigInt(0),
-    //     initCode: "0x",
-    //     callData: "0x",
-    //     callGasLimit: BigInt(0),
-    //     verificationGasLimit: BigInt(0),
-    //     preVerificationGas: BigInt(0),
-    //     maxFeePerGas: BigInt(0),
-    //     maxPriorityFeePerGas: BigInt(0),
-    //     paymasterAndData: "0x",
-    //     signature: "0x"
-
-    // };
-    // if (userOperation) {
     const wrapperUserOperation: MyIUserOperation = {
         sender: userOperation.sender as `0x${string}`,
         nonce: BigInt(userOperation.nonce.toString()),
         initCode: userOperation.initCode as `0x${string}`,
         callData: userOperation.callData as `0x${string}`,
         callGasLimit: BigInt(3n),
-        // callGasLimit: BigInt(userOperation.callGasLimit.toString()),
         verificationGasLimit: BigInt(500000n),
-        // verificationGasLimit: BigInt(userOperation.verificationGasLimit.toString()),
         preVerificationGas: BigInt(30000n),
-        // preVerificationGas: BigInt(userOperation.preVerificationGas.toString()),
         maxFeePerGas: BigInt(100000n),
-        // maxFeePerGas: BigInt(userOperation.maxFeePerGas.toString()),
         maxPriorityFeePerGas: BigInt(2n),
-        // maxPriorityFeePerGas: BigInt(userOperation.maxPriorityFeePerGas.toString()),
         paymasterAndData: userOperation.paymasterAndData as `0x${string}`,
         signature: userOperation.signature as `0x${string}`,
-        // signature: "0x0f3cfe867d970567fe82212f77a0fa9e3242d7702b68e55bd6332f42a8dfb21920f3b31a949a6c11dce49684d88a20cdc31445dcc398e6ba5ee1dd76182c6c7f1b",
     }
 
-    // console.log("hashData", hashData);
     console.log("Wrapper user op", wrapperUserOperation)
-    // }
     if (!account) {
         return <div>No account</div>
     }
+    // 06/18/23: Working now with basic userOp signatures. Now I need to:
+    // 1. Update the sig to be the interchainSigData fields and pass this in to Metamask
+    // 2. Verify the sig on the account (Update the SCW and the factory)
+    // 3. Integrate paymaster and figure out how to pass entrypoint
 
     // const { data, config, error } = usePrepareEntryPointHandleOps({
     //     address: "0xDF0CDa100E71C1295476B80f4bEa713D89C32691",
