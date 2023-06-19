@@ -6,7 +6,7 @@ export const ReceiverAccount = () => {
     const { address } = useAccount()
     const [receiverAccountHash, setReceiverAccountHash] = useState<`0x${string}` | null>(null);
     // const receiverAccountFactoryAddress = import.meta.env.VITE_RECEIVER_ACCOUNT_FACTORY_ADDRESS as `0x${string}`;
-    const receiverAccountFactoryAddress = "0x927C9922c9216B20Fd3F536B885413FC012aa1BD";
+    const receiverAccountFactoryAddress = "0x1b15E1f3c16BCc422314e13a9833339DE667216c";
     const authorizedSpenderAddress = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
     const [receiverAccountAddress, setReceiverAccountAddress] = useState<`0x${string}` | null>(null);
     // let receiverAccountAddress = null;

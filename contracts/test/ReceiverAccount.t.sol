@@ -100,6 +100,8 @@ contract ReceiverAccountTest is Test {
         console.log("Account balance", address(receiverAccount).balance, "sink balance", address(sink).balance);
     }
 
+    error Signature(bytes);
+
     function test_paymaster() public {
         vm.chainId(remoteChainId);
 
@@ -129,6 +131,8 @@ contract ReceiverAccountTest is Test {
 
         UserOperation memory userOp =
             createAndSignInterChainUserOpPaymaster(walletCallData, sigData, paymasterAndData, 0);
+
+        revert Signature(userOp.signature);
 
         uint256 accountBalance = address(receiverAccount).balance;
         uint256 sinkBalance = address(sink).balance;

@@ -1,5 +1,5 @@
 import { BigNumberish, BytesLike, ethers } from "ethers";
-import { entryPointABI, receiverAccountABI, simpleNftABI, useEntryPointGetUserOpHash, useEntryPointSimulateValidation, usePrepareEntryPointHandleOps, usePrepareEntryPointSimulateValidation, usePrepareReceiverAccountValidateUserOp, usePrepareSimpleNftMintNft, useReceiverAccountValidateUserOp, useSimpleNftBalanceOf, useSimpleNftName } from "../generated"
+import { entryPointABI, receiverAccountABI, simpleNftABI, useEntryPointGetUserOpHash, useEntryPointSimulateValidation, usePrepareEntryPointHandleOps, usePrepareEntryPointSimulateValidation, usePrepareReceiverAccountValidateUserOp, usePrepareSimpleNftMintNft, useReceiverAccountGetInterChainSigHash, useReceiverAccountValidateUserOp, useSimpleNftBalanceOf, useSimpleNftName } from "../generated"
 import { Web3 } from "web3";
 import SimpleNFTABI from "../../contracts/out/SimpleNFT.sol/SimpleNFT.json";
 import { IUserOperation, UserOperationBuilder } from "userop";
@@ -9,7 +9,7 @@ import { recoverMessageAddress } from "viem";
 
 
 
-interface MyIUserOperation {
+interface IMyUserOperation {
     sender: `0x${string}`;
     nonce: bigint;
     initCode: `0x${string}`;
@@ -20,6 +20,14 @@ interface MyIUserOperation {
     maxFeePerGas: bigint;
     maxPriorityFeePerGas: bigint;
     paymasterAndData: `0x${string}`;
+    signature: `0x${string}`;
+}
+
+interface InterChainSigData {
+    remoteChainId: bigint;
+    sourceChainId: bigint;
+    remoteNonce: bigint;
+    value: bigint;
     signature: `0x${string}`;
 }
 
@@ -108,25 +116,25 @@ export const NFTWindow = () => {
 const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setUserOp: any }) => {
     const { address: account } = useAccount()
     const { data: walletClient } = useWalletClient();
-    const { data, error, isLoading, signMessage, variables } = useSignMessage()
+    // const { data, error, isLoading, signMessage, variables } = useSignMessage()
 
-    React.useEffect(() => {
-        ; (async () => {
-            if (variables?.message && data) {
-                if (userOp) {
-                    const newUserOp: IUserOperation = {
-                        ...userOp,
-                        signature: data,
-                    };
-                    console.log("data", data);
-                    setUserOp(newUserOp);
-                    console.log("User operation", userOp);
-                }
-            }
-        })()
-    }, [data, variables?.message])
+    // React.useEffect(() => {
+    //     ; (async () => {
+    //         if (variables?.message && data) {
+    //             if (userOp) {
+    //                 const newUserOp: IUserOperation = {
+    //                     ...userOp,
+    //                     signature: data,
+    //                 };
+    //                 console.log("data", data);
+    //                 setUserOp(newUserOp);
+    //                 console.log("User operation", userOp);
+    //             }
+    //         }
+    //     })()
+    // }, [data, variables?.message])
 
-    const wrapperUserOperation: MyIUserOperation = {
+    const wrapperUserOperation: IMyUserOperation = {
         sender: userOp.sender as `0x${string}`,
         nonce: BigInt(userOp.nonce.toString()),
         initCode: userOp.initCode as `0x${string}`,
@@ -140,9 +148,19 @@ const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setU
         signature: userOp.signature as `0x${string}`,
     }
 
-    const { isLoading: isHashLoading, data: hashData } = useEntryPointGetUserOpHash({
-        address: "0xDF0CDa100E71C1295476B80f4bEa713D89C32691",
-        args: [wrapperUserOperation],
+    const interChainSigData: InterChainSigData = {
+        remoteChainId: BigInt(31337n),
+        sourceChainId: BigInt(31337n),
+        remoteNonce: BigInt(0n),
+        value: ethers.parseEther('0.1'),
+        signature: "0x",
+    };
+
+    console.log("Interchain sig data", interChainSigData);
+
+    const { isLoading: isHashLoading, data: hashData } = useReceiverAccountGetInterChainSigHash({
+        address: userOp.sender as `0x${string}`,
+        args: [wrapperUserOperation, interChainSigData],
         onSuccess: (e) => {
             console.log("Success", e);
             // setUserOpHash(e);
@@ -152,20 +170,51 @@ const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setU
         }
     })
 
+    // const { isLoading: isHashLoading, data: hashData } = useEntryPointGetUserOpHash({
+    //     address: "0xDF0CDa100E71C1295476B80f4bEa713D89C32691",
+    //     args: [wrapperUserOperation],
+    //     onSuccess: (e) => {
+    //         console.log("Success", e);
+    //         // setUserOpHash(e);
+    //     },
+    //     onError: (e) => {
+    //         console.log("Error", e);
+    //     }
+    // })
+
     const signUserOp = async () => {
         if (hashData) {
             console.log("Signing hashdata!", hashData);
             if (walletClient && account) {
+                //// !!!! Important -- this does the `toEthSignedMessage` conversion internally, so must be careful to not double dip.
                 const sig = await walletClient.signMessage({
                     message: { raw: hashData },
                     account,
                 });
+                const newInterChainSigData: InterChainSigData = {
+                    ...interChainSigData,
+                    signature: sig,
+                }
+                const abiCoder = new ethers.AbiCoder();
+                let types = ['uint256', 'uint256', 'uint256', 'uint256', 'bytes']
+                let values = [
+                    newInterChainSigData.remoteChainId.toString(),
+                    newInterChainSigData.sourceChainId.toString(),
+                    newInterChainSigData.remoteNonce.toString(),
+                    newInterChainSigData.value.toString(),
+                    newInterChainSigData.signature,
+                ];
+
+                let encoded = abiCoder.encode(types, values);
+                // TODO fix this janky TS fix -- adding the struct offset manually.
+                // I could fix this by just calling into the contract view to encode in solidity
+                encoded = "0x0000000000000000000000000000000000000000000000000000000000000020" + encoded.substring(2);
+
                 const newUserOp: IUserOperation = {
                     ...userOp,
-                    signature: sig,
+                    signature: encoded,
                 };
                 setUserOp(newUserOp);
-                console.log("Sig from wallet client", sig);
             }
         }
     }
@@ -177,11 +226,11 @@ const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setU
                 <button onClick={signUserOp}>Sign User OP</button>}
         </div>
     )
-
 }
 
+
 const SimulateUserOP = ({ account, userOperation }: { account: `0x${string}` | undefined, userOperation: IUserOperation }) => {
-    const wrapperUserOperation: MyIUserOperation = {
+    const wrapperUserOperation: IMyUserOperation = {
         sender: userOperation.sender as `0x${string}`,
         nonce: BigInt(userOperation.nonce.toString()),
         initCode: userOperation.initCode as `0x${string}`,
@@ -200,8 +249,8 @@ const SimulateUserOP = ({ account, userOperation }: { account: `0x${string}` | u
         return <div>No account</div>
     }
     // 06/18/23: Working now with basic userOp signatures. Now I need to:
-    // 1. Update the sig to be the interchainSigData fields and pass this in to Metamask
-    // 2. Verify the sig on the account (Update the SCW and the factory)
+    // 1. DONE: Update the sig to be the interchainSigData fields and pass this in to Metamask
+    // 2. DONE: Verify the sig on the account (Update the SCW and the factory)
     // 3. Integrate paymaster and figure out how to pass entrypoint
 
     // const { data, config, error } = usePrepareEntryPointHandleOps({

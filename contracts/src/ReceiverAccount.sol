@@ -9,48 +9,35 @@ import "./InterChainSigData.sol";
 
 contract ReceiverAccount is SimpleAccount {
     using ECDSA for bytes32;
-    /// implement template method of BaseAccount
-
-    // IEntryPoint private immutable _entryPoint;
+    using InterChainSigDataLib for InterChainSigData;
 
     constructor(IEntryPoint anEntryPoint) SimpleAccount(anEntryPoint) {
-        // _entryPoint = anEntryPoint;
-        // _disableInitializers();
     }
 
-    error WrongSigner(address signer);
-
-    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
+    function _validateSignature(UserOperation calldata userOp, bytes32)
         internal
         virtual
         override
         returns (uint256 validationData)
     {
-        // bytes32 hash = userOpHash.toEthSignedMessageHash();
-        // if (owner != hash.recover(userOp.signature)) {
-        //     return SIG_VALIDATION_FAILED;
-        // }
-        // return 0;
-        bytes32 hash = userOpHash.toEthSignedMessageHash();
-        if (owner != hash.recover(userOp.signature)){
-            address recoveredSigner = hash.recover(userOp.signature);
-            require(recoveredSigner == owner, "account: Invalid signer");
+        InterChainSigData memory sigData = abi.decode(userOp.signature, (InterChainSigData));
+        (address recoveredSigner, ECDSA.RecoverError err) = sigData.tryRecover(userOp, address(entryPoint()));
+        if (!(err == ECDSA.RecoverError.NoError && owner == recoveredSigner)) {
             return SIG_VALIDATION_FAILED;
         }
-        return 0;
 
-        // InterChainSigData memory sigData = abi.decode(userOp.signature, (InterChainSigData));
-        // (address recoveredSigner, ECDSA.RecoverError err) = sigData.tryRecover(userOp, address(entryPoint()));
-        // if (!(err == ECDSA.RecoverError.NoError && owner == recoveredSigner)) {
-        //     return SIG_VALIDATION_FAILED;
-        // }
-
-        // require(sigData.remoteChainId == block.chainid, "account: Invalid source chain Id");
-        // require(sigData.value <= deposits, "account: user spend exceeds available deposits");
+        require(sigData.remoteChainId == block.chainid, "account: Invalid source chain Id");
         // TODO
         // require(sigData.nonce is incremental);
         // require(sigData.remoteChainId is approved)
 
         return 0;
+    }
+
+    function getInterChainSigHash(UserOperation calldata userOp, InterChainSigData calldata sigData) external view returns (bytes32) {
+        bytes32 hash = sigData.hashWithUserOp(userOp);
+        bytes32 interChainUserOpHash = keccak256(abi.encode(hash, address(entryPoint()), sigData.remoteChainId));
+        return interChainUserOpHash;
+        // return interChainUserOpHash.toEthSignedMessageHash();
     }
 }
