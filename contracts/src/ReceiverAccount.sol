@@ -9,7 +9,6 @@ import "./InterChainSigData.sol";
 
 contract ReceiverAccount is SimpleAccount {
     using ECDSA for bytes32;
-    using InterChainSigDataLib for InterChainSigData;
     /// implement template method of BaseAccount
 
     // IEntryPoint private immutable _entryPoint;
@@ -19,7 +18,9 @@ contract ReceiverAccount is SimpleAccount {
         // _disableInitializers();
     }
 
-    function _validateSignature(UserOperation calldata userOp, bytes32)
+    error WrongSigner(address signer);
+
+    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
         internal
         virtual
         override
@@ -30,14 +31,21 @@ contract ReceiverAccount is SimpleAccount {
         //     return SIG_VALIDATION_FAILED;
         // }
         // return 0;
-
-        InterChainSigData memory sigData = abi.decode(userOp.signature, (InterChainSigData));
-        (address recoveredSigner, ECDSA.RecoverError err) = sigData.tryRecover(userOp, address(entryPoint()));
-        if (!(err == ECDSA.RecoverError.NoError && owner == recoveredSigner)) {
+        bytes32 hash = userOpHash.toEthSignedMessageHash();
+        if (owner != hash.recover(userOp.signature)){
+            address recoveredSigner = hash.recover(userOp.signature);
+            require(recoveredSigner == owner, "account: Invalid signer");
             return SIG_VALIDATION_FAILED;
         }
+        return 0;
 
-        require(sigData.remoteChainId == block.chainid, "account: Invalid source chain Id");
+        // InterChainSigData memory sigData = abi.decode(userOp.signature, (InterChainSigData));
+        // (address recoveredSigner, ECDSA.RecoverError err) = sigData.tryRecover(userOp, address(entryPoint()));
+        // if (!(err == ECDSA.RecoverError.NoError && owner == recoveredSigner)) {
+        //     return SIG_VALIDATION_FAILED;
+        // }
+
+        // require(sigData.remoteChainId == block.chainid, "account: Invalid source chain Id");
         // require(sigData.value <= deposits, "account: user spend exceeds available deposits");
         // TODO
         // require(sigData.nonce is incremental);

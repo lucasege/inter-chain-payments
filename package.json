@@ -2,6 +2,7 @@
   "name": "inter-chain-ui",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
     "anvil": "source .env && anvil --fork-url $ANVIL_FORK_URL --chain-id $ANVIL_CHAIN_ID",
     "deploy": "source .env && forge create contracts/src/Counter.sol:Counter --rpc-url $FORGE_RPC_URL --private-key $FORGE_PRIVATE_KEY --etherscan-api-key $ETHERSCAN_API_KEY --verify",
@@ -19,9 +20,11 @@
     "process": "^0.11.10",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "userop": "^0.3.0",
     "util": "^0.12.4",
     "viem": "~0.3.36",
-    "wagmi": "^1.0.6"
+    "wagmi": "^1.0.6",
+    "web3": "^4.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.0.9",

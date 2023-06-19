@@ -7,15 +7,20 @@ export function SourceAccountDeploy() {
     const { address } = useAccount()
     const { data: walletClient } = useWalletClient();
     const [sourceAccountHash, setSourceAccountHash] = useState<`0x${string}` | null>(null);
-    let sourceAccountAddress = null;
+    const [sourceAccountAddress, setSourceAccountAddress] = useState<`0x${string}` | null>(null);
+    // let sourceAccountAddress = null;
 
     const storedAccountAddress = localStorage.getItem('SourceAccountAddress');
-    if (storedAccountAddress !== null) {
-        sourceAccountAddress = storedAccountAddress as `0x${string}`;
+    if (storedAccountAddress !== null && storedAccountAddress != sourceAccountAddress) {
+        setSourceAccountAddress(storedAccountAddress as `0x${string}`);
+        // sourceAccountAddress = storedAccountAddress as `0x${string}`;
     }
 
     const deploySourceAccount = async () => {
         let sourceAccountBytecode = SourceAccountContract.bytecode.object as `0x${string}`;
+        localStorage.removeItem('SourceAccountAddress');
+        setSourceAccountAddress(null);
+        // sourceAccountAddress = null;
 
         const hash = await walletClient?.deployContract({
             abi: sourceAccountABI,
@@ -30,29 +35,37 @@ export function SourceAccountDeploy() {
         }
     }
 
+    const setAddress = (address: `0x${string}`) => {
+        setSourceAccountAddress(address);
+        setSourceAccountHash(null);
+    }
+
     return (
         <div>
-            SourceAccount
-            <button onClick={deploySourceAccount}>Deploy SourceAccount</button>
-            {sourceAccountHash !== null && <SourceAccountReadHash hash={sourceAccountHash} />}
+            SourceAccount:
+
+            {sourceAccountAddress === null &&
+                <button onClick={deploySourceAccount}>Deploy SourceAccount</button>}
+            {sourceAccountAddress !== null && sourceAccountAddress}
+            {sourceAccountHash !== null && <SourceAccountReadHash hash={sourceAccountHash} setAddress={setAddress} />}
             {sourceAccountAddress !== null && <SourceAccountReadAddress address={sourceAccountAddress} />}
         </div>
     )
 }
 
-export function SourceAccountReadHash({ hash }: { hash: `0x${string}` }) {
+export function SourceAccountReadHash({ hash, setAddress }: { hash: `0x${string}`, setAddress: any }) {
     const { data, isError, isLoading } = useWaitForTransaction({
         hash: hash
     })
     if (isLoading) return <div>Processing…</div>
     if (isError) return <div>Transaction error</div>
-    console.log("Data", data)
 
     if (data?.contractAddress) {
         localStorage.setItem('SourceAccountAddress', data.contractAddress);
+        setAddress(data.contractAddress);
     }
 
-    return <div>Nothing hash: {hash}</div>
+    return <div>Processing hash: {hash}</div>
 }
 
 const Deposit = ({ address }: { address: `0x${string}` }) => {
