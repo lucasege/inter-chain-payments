@@ -2,10 +2,17 @@ import { useAccount, useConnect, useNetwork, useWaitForTransaction, useWalletCli
 import { sourceAccountABI, usePrepareSourceAccountDeposit, useSourceAccountDeposit, useSourceAccountDeposits } from '../generated'
 import SourceAccountContract from "../../contracts/out/SourceAccount.sol/SourceAccount.json";
 import { useState } from 'react';
+import { Chain } from 'viem'
+import { createConfig, configureChains, mainnet } from 'wagmi'
+import { publicProvider } from 'wagmi/providers/public'
+import { localEthGanache } from '../wagmi';
 
 export function SourceAccountDeploy() {
+
     const { address } = useAccount()
-    const { data: walletClient } = useWalletClient();
+    const { data: walletClient } = useWalletClient({
+        chainId: 2503,
+    });
     const [sourceAccountHash, setSourceAccountHash] = useState<`0x${string}` | null>(null);
     const [sourceAccountAddress, setSourceAccountAddress] = useState<`0x${string}` | null>(null);
     // let sourceAccountAddress = null;
@@ -26,8 +33,10 @@ export function SourceAccountDeploy() {
             abi: sourceAccountABI,
             account: address,
             bytecode: sourceAccountBytecode,
+            chain: localEthGanache,
             // TODO: replace hardcoded values
-            args: ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", "0xDF0CDa100E71C1295476B80f4bEa713D89C32691", "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "0x4F4495243837681061C4743b74B3eEdf548D56A5", "0x2d5d7d31F671F86C782533cc367F14109a082712"],
+            args: ["0x5d2d2E1378178CAAA9029A224E89B3A66A288878", "0xDF0CDa100E71C1295476B80f4bEa713D89C32691", "0x5d2d2E1378178CAAA9029A224E89B3A66A288878", "0x013459EC3E8Aeced878C5C4bFfe126A366cd19E9", "0x28f8B50E1Be6152da35e923602a2641491E71Ed8"],
+            // args: ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", "0xDF0CDa100E71C1295476B80f4bEa713D89C32691", "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "0x4F4495243837681061C4743b74B3eEdf548D56A5", "0x2d5d7d31F671F86C782533cc367F14109a082712"],
         })
         if (hash) {
             console.log("Hash", hash);
@@ -55,6 +64,7 @@ export function SourceAccountDeploy() {
 
 export function SourceAccountReadHash({ hash, setAddress }: { hash: `0x${string}`, setAddress: any }) {
     const { data, isError, isLoading } = useWaitForTransaction({
+        chainId: 2503,
         hash: hash
     })
     if (isLoading) return <div>Processing…</div>
@@ -71,6 +81,7 @@ export function SourceAccountReadHash({ hash, setAddress }: { hash: `0x${string}
 const Deposit = ({ address }: { address: `0x${string}` }) => {
     const [depositValue, setDepositValue] = useState('');
     const { config } = usePrepareSourceAccountDeposit({
+        chainId: 2503,
         address,
         value: BigInt(depositValue),
         enabled: Boolean(depositValue),
@@ -83,9 +94,11 @@ const Deposit = ({ address }: { address: `0x${string}` }) => {
     })
 
     const { refetch } = useSourceAccountDeposits({
+        chainId: 2503,
         address
     });
     const { isLoading } = useWaitForTransaction({
+        chainId: 2503,
         hash: data?.hash,
         onSuccess: () => refetch(),
     });

@@ -1,11 +1,12 @@
 import { BigNumberish, BytesLike, ethers } from "ethers";
-import { entryPointABI, receiverAccountABI, simpleNftABI, useEntryPointGetUserOpHash, useEntryPointSimulateValidation, usePrepareEntryPointHandleOps, usePrepareEntryPointSimulateValidation, usePrepareReceiverAccountValidateUserOp, usePrepareSimpleNftMintNft, useReceiverAccountGetInterChainSigHash, useReceiverAccountValidateUserOp, useSimpleNftBalanceOf, useSimpleNftName } from "../generated"
+import { entryPointABI, receiverAccountABI, receiverAccountFactoryABI, simpleNftABI, useEntryPointGetSenderAddress, useEntryPointGetUserOpHash, useEntryPointSimulateValidation, useInterChainPaymasterSimulateFrontRun, usePrepareEntryPointGetSenderAddress, usePrepareEntryPointHandleOps, usePrepareEntryPointSimulateValidation, usePrepareInterChainPaymasterSimulateFrontRun, usePrepareReceiverAccountValidateUserOp, usePrepareSimpleNftMintNft, useReceiverAccountFactoryGetAddress, useReceiverAccountGetInterChainSigHash, useReceiverAccountValidateUserOp, useSimpleNftBalanceOf, useSimpleNftName } from "../generated"
 import { Web3 } from "web3";
 import SimpleNFTABI from "../../contracts/out/SimpleNFT.sol/SimpleNFT.json";
 import { IUserOperation, UserOperationBuilder } from "userop";
 import { useAccount, useSignMessage, usePrepareContractWrite, useWalletClient, useConnect } from "wagmi";
 import React, { useState } from "react";
 import { recoverMessageAddress } from "viem";
+import { localPolygonGanache, remoteChainId } from "../wagmi";
 
 
 
@@ -31,9 +32,15 @@ interface InterChainSigData {
     signature: `0x${string}`;
 }
 
+const interchainPaymasterAddress = "0xDBfD5A731b744Aad08a4238387910B9ca7BddcB0";
+const receiverAccountFactoryAddress = "0x1b15E1f3c16BCc422314e13a9833339DE667216c";
+const authorizedSpenderAddress = "0x5d2d2E1378178CAAA9029A224E89B3A66A288878";
+let web3 = new Web3(Web3.givenProvider || "ws://localhost:8500/4");
+
 export const NFTWindow = () => {
+    const { data: walletClient } = useWalletClient();
+
     const { address } = useAccount()
-    let web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
     const [userOperation, setUserOperation] = useState<IUserOperation | null>(null);
 
     const nftAddress = import.meta.env.VITE_NFT_ADDRESS;
@@ -72,16 +79,61 @@ export const NFTWindow = () => {
         outputs: [],
     }, [nftAddress, BigInt("100000000000000000"), mintData]);
 
+    const initCode = ethers.concat([
+        receiverAccountFactoryAddress,
+        web3.eth.abi.encodeFunctionCall({
+            inputs: [
+                {
+                    internalType: "address",
+                    name: "owner",
+                    type: "address"
+                },
+                {
+                    internalType: "uint256",
+                    name: "salt",
+                    type: "uint256"
+                }
+            ],
+            name: "createAccount",
+            outputs: [
+                {
+                    internalType: "contract ReceiverAccount",
+                    name: "ret",
+                    type: "address"
+                }
+            ],
+            stateMutability: "nonpayable",
+            type: "function"
+        }, [authorizedSpenderAddress, BigInt(0)])
+    ]);
+    const paymasterAndData = interchainPaymasterAddress;
+    const { isLoading: senderAddressLoading, data: senderAddress } = useReceiverAccountFactoryGetAddress({
+        address: receiverAccountFactoryAddress,
+        account: address,
+        chainId: remoteChainId,
+        args: [authorizedSpenderAddress, BigInt(0)],
+        onSuccess: (e) => {
+            console.log("Success getting address", e);
+        }
+    })
+
     const buildUserOp = async () => {
         // TODO nonce
-        const builder = new UserOperationBuilder()
-            .useDefaults({
-                sender: receiverAccountAddress,
-                callData: executeData,
-            });
-        // Build op with the middleware stack.
-        const userOp = await builder.buildOp("0xDF0CDa100E71C1295476B80f4bEa713D89C32691", "31337");
-        setUserOperation(userOp);
+        if (!senderAddressLoading && senderAddress) {
+            // write?.();
+            console.log("Sender address", senderAddress)
+
+            const builder = new UserOperationBuilder()
+                .useDefaults({
+                    sender: senderAddress,
+                    callData: executeData,
+                    initCode,
+                    paymasterAndData,
+                });
+            // Build op with the middleware stack.
+            const userOp = await builder.buildOp("0xDF0CDa100E71C1295476B80f4bEa713D89C32691", "31337");
+            setUserOperation(userOp);
+        }
     }
 
 
@@ -139,7 +191,7 @@ const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setU
         nonce: BigInt(userOp.nonce.toString()),
         initCode: userOp.initCode as `0x${string}`,
         callData: userOp.callData as `0x${string}`,
-        callGasLimit: BigInt(3n),
+        callGasLimit: BigInt(30000n),
         verificationGasLimit: BigInt(500000n),
         preVerificationGas: BigInt(30000n),
         maxFeePerGas: BigInt(100000n),
@@ -149,8 +201,8 @@ const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setU
     }
 
     const interChainSigData: InterChainSigData = {
-        remoteChainId: BigInt(31337n),
-        sourceChainId: BigInt(31337n),
+        remoteChainId: BigInt(2503n),
+        sourceChainId: BigInt(2504n),
         remoteNonce: BigInt(0n),
         value: ethers.parseEther('0.1'),
         signature: "0x",
@@ -235,7 +287,7 @@ const SimulateUserOP = ({ account, userOperation }: { account: `0x${string}` | u
         nonce: BigInt(userOperation.nonce.toString()),
         initCode: userOperation.initCode as `0x${string}`,
         callData: userOperation.callData as `0x${string}`,
-        callGasLimit: BigInt(3n),
+        callGasLimit: BigInt(30000n),
         verificationGasLimit: BigInt(500000n),
         preVerificationGas: BigInt(30000n),
         maxFeePerGas: BigInt(100000n),
@@ -260,17 +312,23 @@ const SimulateUserOP = ({ account, userOperation }: { account: `0x${string}` | u
     //     enabled: true
     // });
 
-    const { data, config, error } = usePrepareEntryPointSimulateValidation({
-        address: "0xDF0CDa100E71C1295476B80f4bEa713D89C32691",
+    // TODO: June 21
+    // Seems to just be throwing a basic revert. Probably next step is to just do away with hooks and
+    // Call directly from ethers and try to interpret revert reason
+
+    // const { data, config, error } = usePrepareEntryPointSimulateValidation({
+    const { data, config, error } = usePrepareInterChainPaymasterSimulateFrontRun({
+        address: interchainPaymasterAddress,
         account: account,
-        args: [wrapperUserOperation],
-        enabled: true,
+        args: [wrapperUserOperation, "0x0000000000000000000000000000000000000000", "0x", BigInt(web3.utils.toWei('0.1', 'ether'))],
+        enabled: false,
         gas: 10000000n,
         gasPrice: 100000000n,
     });
     console.log("Data", data)
     console.log("Config", config)
     console.log("Error", error);
+    const { write, error: writeErro, data: writeData } = useInterChainPaymasterSimulateFrontRun(config);
     // const receiverAccountAddress = localStorage.getItem("ReceiverAccountAddress") as `0x${string}`;
     // const { data, config, error } = usePrepareReceiverAccountValidateUserOp({
     //     address: receiverAccountAddress,
@@ -297,10 +355,15 @@ const SimulateUserOP = ({ account, userOperation }: { account: `0x${string}` | u
     //         console.log("Error simulating, ", e);
     //     }
     // })
+    console.log("writerror ", writeErro);
+    console.log("Write data", writeData);
     // console.log("Simulation data", data);
 
     const simulateValidation = async () => {
         console.log("Simulating validation");
+        write?.();
+        console.log("writerror ", writeErro);
+        console.log("Write data", writeData);
         // const res = await walletClient?.sendTransaction({
         //     to: "0xDF0CDa100E71C1295476B80f4bEa713D89C32691",
         //     account: account,

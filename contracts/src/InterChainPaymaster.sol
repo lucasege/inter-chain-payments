@@ -6,12 +6,15 @@ import "account-abstraction/samples/DepositPaymaster.sol";
 import "account-abstraction/interfaces/IEntryPoint.sol";
 import "./SourceAccount.sol";
 
-contract InterChainPaymaster is DepositPaymaster {
+contract InterChainPaymaster is BasePaymaster {
+    using UserOperationLib for UserOperation;
     // TODO generalize to include a mapping of `SourceAccount -> authorizedSpender`
-    SourceAccount source;
+    // SourceAccount source;
+    // address[] sourceAccounts;
 
-    constructor(IEntryPoint _entryPoint, address _sourceAccount) DepositPaymaster(_entryPoint) {
-        source = SourceAccount(_sourceAccount);
+    // constructor(IEntryPoint _entryPoint) DepositPaymaster(_entryPoint) {
+    constructor(IEntryPoint _entryPoint) BasePaymaster(_entryPoint) {
+        // source = SourceAccount(_sourceAccount);
     }
 
     function simulateFrontRun(
@@ -26,7 +29,9 @@ contract InterChainPaymaster is DepositPaymaster {
         entryPoint.simulateHandleOp(op, target, targetCallData);
     }
 
-    function frontRunUserOp(UserOperation calldata op, uint256 frontRunValue) public {
+    function frontRunUserOp(address sourceAccount, UserOperation calldata op, uint256 frontRunValue) public {
+        // TODO: make xchain
+        SourceAccount source = SourceAccount(sourceAccount);
         bool success = source.proveWithdraw(op);
         if (success) {
             // TODO: actually make interchain call here
@@ -38,6 +43,19 @@ contract InterChainPaymaster is DepositPaymaster {
 
             entryPoint.handleOps(userOps, payable(address(this)));
         }
+    }
+
+    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost) internal view override returns (bytes memory context, uint256 validationData) {
+        // TODO: In theory this would be where you could call the cross-chain check, however that probably violates the
+        // Entrypoint's requirements for idempotency and state access.
+        // Instead it might be easier to just add another call on the paymaster, e.g. `registerUserOp` that will call into the
+        // Source account, verify the claim and set some state on the paymaster and an expiration time
+        // If postop is needed, send context
+        return ("", 0);
+    }
+
+    function _postOp(PostOpMode, bytes calldata, uint256) internal virtual override {
+        require(false, "account: postOp? Should not reach here");
     }
 
     // solhint-disable-next-line no-empty-blocks

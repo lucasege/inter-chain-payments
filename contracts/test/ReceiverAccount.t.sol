@@ -61,7 +61,7 @@ contract ReceiverAccountTest is Test {
         token = new TestToken();
         oracle = new TestOracle();
         vm.deal(dummyPaymaster, 5 ether);
-        interchainPaymaster = new InterChainPaymaster(entrypoint, address(sourceAccount));
+        interchainPaymaster = new InterChainPaymaster(entrypoint);
     }
 
     function test_userOp() public {
@@ -132,8 +132,6 @@ contract ReceiverAccountTest is Test {
         UserOperation memory userOp =
             createAndSignInterChainUserOpPaymaster(walletCallData, sigData, paymasterAndData, 0);
 
-        revert Signature(userOp.signature);
-
         uint256 accountBalance = address(receiverAccount).balance;
         uint256 sinkBalance = address(sink).balance;
         console.log("Account balance", accountBalance, "sink balance", sinkBalance);
@@ -161,7 +159,7 @@ contract ReceiverAccountTest is Test {
         // Set up paymaster
         // Stake is for reputation/slashing
         interchainPaymaster.addStake{value: 2 ether}(1);
-        interchainPaymaster.addToken(token, oracle);
+        // interchainPaymaster.addToken(token, oracle);
 
         // Deposit is used by the paymaster to pay for gas, different from account's deposit in interchainPaymaster (ERC20)
         entrypoint.depositTo{value: 1 ether}(address(interchainPaymaster));
@@ -190,7 +188,7 @@ contract ReceiverAccountTest is Test {
         console.log("Account balance", accountBalance, "sink balance", sinkBalance);
 
         vm.prank(address(receiverAccount));
-        interchainPaymaster.addDepositFor(token, address(receiverAccount), 1 ether);
+        // interchainPaymaster.addDepositFor(token, address(receiverAccount), 1 ether);
 
         // Failing because no eth funds
         vm.expectRevert();
@@ -207,7 +205,7 @@ contract ReceiverAccountTest is Test {
         console.log("Balance before", address(interchainPaymaster).balance, "source", address(sourceAccount).balance);
         console.log("receiver", address(receiverAccount).balance);
         console.log("Sink", address(sink).balance);
-        interchainPaymaster.frontRunUserOp(userOp, 2 ether);
+        interchainPaymaster.frontRunUserOp(address(sourceAccount), userOp, 2 ether);
         console.log("Balance After", address(interchainPaymaster).balance, "source", address(sourceAccount).balance);
         console.log("receiver", address(receiverAccount).balance);
         console.log("Sink", address(sink).balance);
