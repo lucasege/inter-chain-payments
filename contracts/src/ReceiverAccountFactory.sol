@@ -13,10 +13,13 @@ import "./ReceiverAccount.sol";
  * This way, the entryPoint.getSenderAddress() can be called either before or after the account is created.
  */
 contract ReceiverAccountFactory {
+    using InterChainSigDataLib for InterChainSigData;
     ReceiverAccount public immutable accountImplementation;
+    address public entryPoint;
 
     constructor(IEntryPoint _entryPoint) {
         accountImplementation = new ReceiverAccount(_entryPoint);
+        entryPoint = address(_entryPoint);
     }
 
     /**
@@ -54,5 +57,12 @@ contract ReceiverAccountFactory {
                 )
             )
         );
+    }
+
+    function getInterChainSigHash(UserOperation calldata userOp, InterChainSigData calldata sigData) external view returns (bytes32) {
+        bytes32 hash = sigData.hashWithUserOp(userOp);
+        bytes32 interChainUserOpHash = keccak256(abi.encode(hash, entryPoint, sigData.remoteChainId));
+        return interChainUserOpHash;
+        // return interChainUserOpHash.toEthSignedMessageHash();
     }
 }

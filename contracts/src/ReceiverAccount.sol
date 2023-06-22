@@ -34,10 +34,4 @@ contract ReceiverAccount is SimpleAccount {
         return 0;
     }
 
-    function getInterChainSigHash(UserOperation calldata userOp, InterChainSigData calldata sigData) external view returns (bytes32) {
-        bytes32 hash = sigData.hashWithUserOp(userOp);
-        bytes32 interChainUserOpHash = keccak256(abi.encode(hash, address(entryPoint()), sigData.remoteChainId));
-        return interChainUserOpHash;
-        // return interChainUserOpHash.toEthSignedMessageHash();
-    }
 }

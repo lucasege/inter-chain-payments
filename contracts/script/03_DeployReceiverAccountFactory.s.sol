@@ -7,7 +7,7 @@ import "account-abstraction/interfaces/IEntryPoint.sol";
 
 contract ReceiverAccountFactoryScript is Script {
     // 0x1656Fdd41Bcb972e0286dFd1958fED148f5057ab
-    bytes32 constant salt = keccak256("ReceiverAccountFactory");
+    bytes32 constant salt = keccak256("ReceiverAccountFactory3");
 
     address entrypoint = 0xDF0CDa100E71C1295476B80f4bEa713D89C32691; // Deterministic deployment
 
@@ -16,7 +16,8 @@ contract ReceiverAccountFactoryScript is Script {
     function run() public {
         vm.startBroadcast();
         IEntryPoint e = IEntryPoint(entrypoint);
-        ReceiverAccountFactory r = new ReceiverAccountFactory{salt: salt}(e);
+        // ReceiverAccountFactory r = new ReceiverAccountFactory{salt: salt}(e);
+        ReceiverAccountFactory r = new ReceiverAccountFactory(e);
         console.log("ReceiverAccountFactory address", address(r));
     }
 }

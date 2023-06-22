@@ -14,7 +14,7 @@ contract SourceAccount is AxelarExecutable {
     address owner;
     address entrypoint;
     // An address (but perhaps not a valid EOA depending on the chain) that can spend funds
-    address authorizedSpender;
+    address public authorizedSpender;
 
     // Eth
     uint256 public deposits;

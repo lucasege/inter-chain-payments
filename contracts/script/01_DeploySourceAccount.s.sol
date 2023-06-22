@@ -10,7 +10,8 @@ contract SourceAccountScript is Script {
     // TODO: read from env
     address owner = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266; // Account 1
     address entrypoint = 0xDF0CDa100E71C1295476B80f4bEa713D89C32691; // Deterministic deployment
-    address authorizedSpender = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8; // Account 2
+    // address authorizedSpender = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8; // Account 2
+    address authorizedSpender = 0x5d2d2E1378178CAAA9029A224E89B3A66A288878; // Account 2
     address axelarGateway = 0x4F4495243837681061C4743b74B3eEdf548D56A5; // Forked from mainnet
     address axelarGasService = 0x2d5d7d31F671F86C782533cc367F14109a082712; // Forked from mainnet
 

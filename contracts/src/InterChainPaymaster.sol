@@ -17,6 +17,8 @@ contract InterChainPaymaster is BasePaymaster {
         // source = SourceAccount(_sourceAccount);
     }
 
+    event PostOp(PostOpMode);
+
     function simulateFrontRun(
         UserOperation calldata op,
         address target,
@@ -31,18 +33,18 @@ contract InterChainPaymaster is BasePaymaster {
 
     function frontRunUserOp(address sourceAccount, UserOperation calldata op, uint256 frontRunValue) public {
         // TODO: make xchain
-        SourceAccount source = SourceAccount(sourceAccount);
-        bool success = source.proveWithdraw(op);
-        if (success) {
+        // SourceAccount source = SourceAccount(sourceAccount);
+        // bool success = source.proveWithdraw(op);
+        // if (success) {
             // TODO: actually make interchain call here
-            source.spenderWithdraw(op);
+            // source.spenderWithdraw(op);
             Address.sendValue(payable(op.sender), frontRunValue);
 
             UserOperation[] memory userOps = new UserOperation[](1);
             userOps[0] = op;
 
             entryPoint.handleOps(userOps, payable(address(this)));
-        }
+        // }
     }
 
     function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost) internal view override returns (bytes memory context, uint256 validationData) {
@@ -54,8 +56,8 @@ contract InterChainPaymaster is BasePaymaster {
         return ("", 0);
     }
 
-    function _postOp(PostOpMode, bytes calldata, uint256) internal virtual override {
-        require(false, "account: postOp? Should not reach here");
+    function _postOp(PostOpMode mode, bytes calldata, uint256) internal virtual override {
+        emit PostOp(mode);
     }
 
     // solhint-disable-next-line no-empty-blocks

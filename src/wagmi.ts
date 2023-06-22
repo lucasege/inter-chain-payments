@@ -40,7 +40,8 @@ export const localPolygonGanache = {
 } as const satisfies Chain
 
 export const sourceChainId = localEthGanache.id;
-export const remoteChainId = localPolygonGanache.id;
+// export const remoteChainId = localPolygonGanache.id;
+export const remoteChainId = 31337;
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [

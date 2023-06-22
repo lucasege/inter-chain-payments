@@ -7,9 +7,8 @@ import "../src/InterChainPaymaster.sol";
 import "account-abstraction/interfaces/IEntryPoint.sol";
 
 contract TestTokenDeploy is Script {
-    address payable interchainPaymaster = payable(0x77AD263Cd578045105FBFC88A477CAd808d39Cf6); // Deterministic deployment
+    address payable interchainPaymaster = payable(0x12456Fa31e57F91B70629c1196337074c966492a); // Deterministic deployment
     address entrypoint = 0xDF0CDa100E71C1295476B80f4bEa713D89C32691; // Deterministic deployment
-    address sourceAccount = 0x89A4709eA55AC6dd5933b35Dd1881c924e47baA2; // Deterministic deployment
     address receiverAccount = 0xB9D6057f99802bc89B376733968619Eeb11B6B64; // can change;
     function setUp() public {}
 
@@ -23,7 +22,7 @@ contract TestTokenDeploy is Script {
         // TODO move to some initialize functions:
         InterChainPaymaster paymaster = InterChainPaymaster(interchainPaymaster);
         paymaster.addStake{value: 2 ether}(1);
-        paymaster.addToken(t, oracle);
+        // paymaster.addToken(t, oracle);
 
         IEntryPoint e = IEntryPoint(entrypoint);
         e.depositTo{value: 1 ether}(interchainPaymaster);

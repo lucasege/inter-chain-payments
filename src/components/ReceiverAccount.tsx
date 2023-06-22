@@ -7,7 +7,7 @@ export const ReceiverAccount = () => {
     const { address } = useAccount()
     const [receiverAccountHash, setReceiverAccountHash] = useState<`0x${string}` | null>(null);
     // const receiverAccountFactoryAddress = import.meta.env.VITE_RECEIVER_ACCOUNT_FACTORY_ADDRESS as `0x${string}`;
-    const interchainPaymasterAddress = "0xDBfD5A731b744Aad08a4238387910B9ca7BddcB0";
+    const interchainPaymasterAddress = "0x12456Fa31e57F91B70629c1196337074c966492a";
     const receiverAccountFactoryAddress = "0x1b15E1f3c16BCc422314e13a9833339DE667216c";
     // TODO use address?
     const authorizedSpenderAddress = "0x5d2d2E1378178CAAA9029A224E89B3A66A288878";
