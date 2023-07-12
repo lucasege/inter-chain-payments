@@ -1,14 +1,11 @@
-import { BigNumberish, BytesLike, ethers } from "ethers";
-import { entryPointABI, receiverAccountABI, receiverAccountFactoryABI, simpleNftABI, useEntryPointGetSenderAddress, useEntryPointGetUserOpHash, useEntryPointSimulateValidation, useInterChainPaymasterFrontRunUserOp, useInterChainPaymasterSimulateFrontRun, usePrepareEntryPointGetSenderAddress, usePrepareEntryPointHandleOps, usePrepareEntryPointSimulateValidation, usePrepareInterChainPaymasterFrontRunUserOp, usePrepareInterChainPaymasterSimulateFrontRun, usePrepareReceiverAccountValidateUserOp, usePrepareSimpleNftMintNft, useReceiverAccountFactoryGetAddress, useReceiverAccountFactoryGetInterChainSigHash, useReceiverAccountValidateUserOp, useSimpleNftBalanceOf, useSimpleNftName } from "../generated"
+import { ethers } from "ethers";
+import { useInterChainPaymasterFrontRunUserOp, usePrepareInterChainPaymasterFrontRunUserOp, useReceiverAccountFactoryGetInterChainSigHash, useSimpleNftBalanceOf } from "../generated"
 import { Web3 } from "web3";
-import SimpleNFTABI from "../../contracts/out/SimpleNFT.sol/SimpleNFT.json";
 import { IUserOperation, UserOperationBuilder } from "userop";
-import { useAccount, useSignMessage, usePrepareContractWrite, useWalletClient, useConnect, useWaitForTransaction, useContractRead } from "wagmi";
-import React, { useState } from "react";
-import { recoverMessageAddress } from "viem";
-import { localPolygonGanache, remoteChainId } from "../wagmi";
-
-
+import { useAccount, useWalletClient, useWaitForTransaction } from "wagmi";
+import { useState } from "react";
+import { remoteChainId, sourceChainId } from "../wagmi";
+import { AUTHORIZED_SPENDER_ADDRESS, ENTRYPOINT_ADDRESS, INTERCHAIN_PAYMASTER_ADDRESS, NFT_ADDRESS, RECEIVER_ACCOUNT_FACTORY_ADDRESS, SOURCE_ACCOUNT_ADDRESS, WEB3_PROVIDER_ADDRESS } from "../utils/constants";
 
 interface IMyUserOperation {
     sender: `0x${string}`;
@@ -31,41 +28,30 @@ interface InterChainSigData {
     value: bigint;
     signature: `0x${string}`;
 }
+
 // To switch between networks:
 // 0. Deploy new factory with the hash retrieval
-// 1. Change aaddresses (interchainpaymaster, factory, authorized spender)
+// 1. Change addresses (interchainpaymaster, factory, authorized spender)
 // 2. Change remote chain Id (in global setting and on sig data)
 // 3. Change nonce for remote account (in two places)
 
-const entrypointAddress = "0xDF0CDa100E71C1295476B80f4bEa713D89C32691";
-// 0x01F04fe7f01bFe1887f284F06cdaf841a1E1D58C
-const sourceAccountAddress = "0x89A4709eA55AC6dd5933b35Dd1881c924e47baA2";
-// const interchainPaymasterAddress = "0x40ed70bFAC8AE48CBE838D978EA3312C31Fe5996";
-const interchainPaymasterAddress = "0x12456Fa31e57F91B70629c1196337074c966492a";
-// const receiverAccountFactoryAddress = "0x1b15E1f3c16BCc422314e13a9833339DE667216c";
-const receiverAccountFactoryAddress = "0x1757a98c1333b9dc8d408b194b2279b5afdf70cc";
-// const authorizedSpenderAddress = "0x5d2d2E1378178CAAA9029A224E89B3A66A288878";
-const authorizedSpenderAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-// const nftAddress = "0x86F9dFfe332BA023992E10D7cCffAAb60Ce08642"
-const nftAddress = "0xfAFA2b1865629a7b8357CFbF231c7e9E54f4824D"
-// let web3 = new Web3(Web3.givenProvider || "ws://localhost:8500/4");
-let web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
+let web3 = new Web3(Web3.givenProvider || `ws://${WEB3_PROVIDER_ADDRESS}`);
 
 export const NFTWindow = () => {
     const { data: walletClient } = useWalletClient();
-    let provider = new ethers.JsonRpcProvider('http://localhost:8545');
+    let provider = new ethers.JsonRpcProvider(`http://${WEB3_PROVIDER_ADDRESS}`);
     const contractABI = [
         "function getAddress(address owner, uint256 salt) view returns (address)"
     ];
-    const receiverAccountFactoryContract = new ethers.Contract(receiverAccountFactoryAddress, contractABI, provider);
+    const receiverAccountFactoryContract = new ethers.Contract(RECEIVER_ACCOUNT_FACTORY_ADDRESS, contractABI, provider);
 
     const { address } = useAccount()
     const [userOperation, setUserOperation] = useState<IUserOperation | null>(null);
 
-    const paymasterAndData = interchainPaymasterAddress;
+    const paymasterAndData = INTERCHAIN_PAYMASTER_ADDRESS;
 
     const buildUserOp = async () => {
-        const senderAddress = await receiverAccountFactoryContract.getFunction("getAddress")(authorizedSpenderAddress, 0);
+        const senderAddress = await receiverAccountFactoryContract.getFunction("getAddress")(AUTHORIZED_SPENDER_ADDRESS, 0);
         const mintData = web3.eth.abi.encodeFunctionCall({
             stateMutability: 'payable',
             type: 'function',
@@ -86,10 +72,10 @@ export const NFTWindow = () => {
             ],
             name: 'execute',
             outputs: [],
-        }, [nftAddress, BigInt("100000000000000000"), mintData]);
+        }, [NFT_ADDRESS, BigInt("100000000000000000"), mintData]);
 
         const initCode = ethers.concat([
-            receiverAccountFactoryAddress,
+            RECEIVER_ACCOUNT_FACTORY_ADDRESS,
             web3.eth.abi.encodeFunctionCall({
                 inputs: [
                     {
@@ -113,7 +99,7 @@ export const NFTWindow = () => {
                 ],
                 stateMutability: "nonpayable",
                 type: "function"
-            }, [authorizedSpenderAddress, BigInt(0)])
+            }, [AUTHORIZED_SPENDER_ADDRESS, BigInt(0)])
         ]);
         // TODO nonce
         if (senderAddress) {
@@ -127,7 +113,7 @@ export const NFTWindow = () => {
                     paymasterAndData,
                 });
             // Build op with the middleware stack.
-            const userOp = await builder.buildOp("0xDF0CDa100E71C1295476B80f4bEa713D89C32691", "31337");
+            const userOp = await builder.buildOp(ENTRYPOINT_ADDRESS, remoteChainId);
             setUserOperation(userOp);
         }
     }
@@ -167,9 +153,8 @@ const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setU
     }
 
     const interChainSigData: InterChainSigData = {
-        remoteChainId: BigInt(31337),
-        // remoteChainId: BigInt(2503n),
-        sourceChainId: BigInt(2504n),
+        remoteChainId: BigInt(remoteChainId),
+        sourceChainId: BigInt(sourceChainId),
         remoteNonce: BigInt(0n),
         value: ethers.parseEther('0.1'),
         signature: "0x",
@@ -178,12 +163,8 @@ const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setU
     console.log("Interchain sig data", interChainSigData);
 
     const { isLoading: isHashLoading, data: hashData } = useReceiverAccountFactoryGetInterChainSigHash({
-        address: receiverAccountFactoryAddress,
+        address: RECEIVER_ACCOUNT_FACTORY_ADDRESS,
         args: [wrapperUserOperation, interChainSigData],
-        onSuccess: (e) => {
-            console.log("Success", e);
-            // setUserOpHash(e);
-        },
         onError: (e) => {
             console.log("Error", e);
         }
@@ -214,7 +195,7 @@ const GenerateSignature = ({ userOp, setUserOp }: { userOp: IUserOperation, setU
 
                 let encoded = abiCoder.encode(types, values);
                 // TODO fix this janky TS fix -- adding the struct offset manually.
-                // I could fix this by just calling into the contract view to encode in solidity
+                // I could fix this by just calling into a contract view fn to encode in solidity
                 encoded = "0x0000000000000000000000000000000000000000000000000000000000000020" + encoded.substring(2);
 
                 const newUserOp: IUserOperation = {
@@ -255,23 +236,19 @@ const SimulateUserOP = ({ account, userOperation }: { account: `0x${string}` | u
     if (!account) {
         return <div>No account</div>
     }
-    // 06/18/23: Working now with basic userOp signatures. Now I need to:
-    // 1. DONE: Update the sig to be the interchainSigData fields and pass this in to Metamask
-    // 2. DONE: Verify the sig on the account (Update the SCW and the factory)
-    // 3. DONE: Integrate paymaster and figure out how to pass entrypoint
 
     const { data, config, error } = usePrepareInterChainPaymasterFrontRunUserOp({
         chainId: remoteChainId,
-        address: interchainPaymasterAddress,
+        address: INTERCHAIN_PAYMASTER_ADDRESS,
         account: account,
-        args: [sourceAccountAddress, wrapperUserOperation, BigInt(web3.utils.toWei('0.1', 'ether'))],
+        args: [SOURCE_ACCOUNT_ADDRESS, wrapperUserOperation, BigInt(web3.utils.toWei('0.1', 'ether'))],
     });
 
     const { write, error: writeError, data: writeData } = useInterChainPaymasterFrontRunUserOp(config);
 
     const { data: NFTBalanceData, refetch } = useSimpleNftBalanceOf({
         chainId: remoteChainId,
-        address: nftAddress,
+        address: NFT_ADDRESS,
         args: [wrapperUserOperation.sender as `0x${string}`],
     });
 

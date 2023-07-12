@@ -8,13 +8,8 @@ import "./SourceAccount.sol";
 
 contract InterChainPaymaster is BasePaymaster {
     using UserOperationLib for UserOperation;
-    // TODO generalize to include a mapping of `SourceAccount -> authorizedSpender`
-    // SourceAccount source;
-    // address[] sourceAccounts;
 
-    // constructor(IEntryPoint _entryPoint) DepositPaymaster(_entryPoint) {
     constructor(IEntryPoint _entryPoint) BasePaymaster(_entryPoint) {
-        // source = SourceAccount(_sourceAccount);
     }
 
     event PostOp(PostOpMode);
@@ -33,9 +28,9 @@ contract InterChainPaymaster is BasePaymaster {
 
     function frontRunUserOp(address sourceAccount, UserOperation calldata op, uint256 frontRunValue) public {
         // TODO: make xchain
-        // SourceAccount source = SourceAccount(sourceAccount);
-        // bool success = source.proveWithdraw(op);
-        // if (success) {
+        SourceAccount source = SourceAccount(sourceAccount);
+        bool success = source.proveWithdraw(op);
+        if (success) {
             // TODO: actually make interchain call here
             // source.spenderWithdraw(op);
             Address.sendValue(payable(op.sender), frontRunValue);
@@ -44,7 +39,7 @@ contract InterChainPaymaster is BasePaymaster {
             userOps[0] = op;
 
             entryPoint.handleOps(userOps, payable(address(this)));
-        // }
+        }
     }
 
     function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost) internal view override returns (bytes memory context, uint256 validationData) {

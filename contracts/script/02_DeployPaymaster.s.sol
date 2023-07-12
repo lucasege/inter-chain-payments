@@ -7,7 +7,7 @@ import "account-abstraction/interfaces/IEntryPoint.sol";
 
 contract InterChainPaymasterScript is Script {
     // 0x30426D33a78afdb8788597D5BFaBdADc3Be95698
-    bytes32 constant salt = keccak256("InterChainPaymaster2");
+    bytes32 constant salt = keccak256("InterChainPaymaster");
 
     address entrypoint = 0xDF0CDa100E71C1295476B80f4bEa713D89C32691; // Deterministic deployment
 

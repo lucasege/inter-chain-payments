@@ -76,12 +76,6 @@ contract SourceAccount is AxelarExecutable {
         this.spenderWithdraw(userOp);
     }
 
-    // // Probably can't have this because it adds a race condition for the owner to prevent legal usage
-    // // Maybe would work with a similar withdraw period, not necessary now.
-    // function setAuthorizedSpender(address anAuthorizedSpender) public onlyOwner {
-    //     authorizedSpender = anAuthorizedSpender;
-    // }
-
     function deposit() public payable returns (uint256) {
         deposits += msg.value;
         return deposits;
