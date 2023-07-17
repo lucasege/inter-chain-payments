@@ -5,18 +5,22 @@ import { useState } from 'react';
 import { Chain } from 'viem'
 import { createConfig, configureChains, mainnet } from 'wagmi'
 import { publicProvider } from 'wagmi/providers/public'
-import { localEthGanache } from '../wagmi';
+import { localEthGanache, sourceChainId } from '../wagmi';
+import { SOURCE_ACCOUNT_ADDRESS } from '../utils/constants';
 
 export function SourceAccountDeploy() {
 
     const { address } = useAccount()
     const { data: walletClient } = useWalletClient({
-        chainId: 2503,
+        chainId: sourceChainId,
     });
     const [sourceAccountHash, setSourceAccountHash] = useState<`0x${string}` | null>(null);
     const [sourceAccountAddress, setSourceAccountAddress] = useState<`0x${string}` | null>(null);
     // let sourceAccountAddress = null;
 
+    if (sourceAccountAddress == null || sourceAccountAddress == undefined) {
+        setSourceAccountAddress(SOURCE_ACCOUNT_ADDRESS);
+    }
     const storedAccountAddress = localStorage.getItem('SourceAccountAddress');
     if (storedAccountAddress !== null && storedAccountAddress != sourceAccountAddress) {
         setSourceAccountAddress(storedAccountAddress as `0x${string}`);
@@ -64,7 +68,7 @@ export function SourceAccountDeploy() {
 
 export function SourceAccountReadHash({ hash, setAddress }: { hash: `0x${string}`, setAddress: any }) {
     const { data, isError, isLoading } = useWaitForTransaction({
-        chainId: 2503,
+        chainId: sourceChainId,
         hash: hash
     })
     if (isLoading) return <div>Processing…</div>
@@ -81,7 +85,7 @@ export function SourceAccountReadHash({ hash, setAddress }: { hash: `0x${string}
 const Deposit = ({ address }: { address: `0x${string}` }) => {
     const [depositValue, setDepositValue] = useState('');
     const { config } = usePrepareSourceAccountDeposit({
-        chainId: 2503,
+        chainId: sourceChainId,
         address,
         value: BigInt(depositValue),
         enabled: Boolean(depositValue),
@@ -94,11 +98,11 @@ const Deposit = ({ address }: { address: `0x${string}` }) => {
     })
 
     const { refetch } = useSourceAccountDeposits({
-        chainId: 2503,
+        chainId: sourceChainId,
         address
     });
     const { isLoading } = useWaitForTransaction({
-        chainId: 2503,
+        chainId: sourceChainId,
         hash: data?.hash,
         onSuccess: () => refetch(),
     });
@@ -134,6 +138,7 @@ const Deposit = ({ address }: { address: `0x${string}` }) => {
 
 const ViewDeposits = ({ address }: { address: `0x${string}` }) => {
     const { data: deposits } = useSourceAccountDeposits({
+        chainId: sourceChainId,
         address
     });
     return <div>

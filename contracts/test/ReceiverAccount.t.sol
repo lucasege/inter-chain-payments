@@ -61,7 +61,7 @@ contract ReceiverAccountTest is Test {
         token = new TestToken();
         oracle = new TestOracle();
         vm.deal(dummyPaymaster, 5 ether);
-        interchainPaymaster = new InterChainPaymaster(entrypoint);
+        interchainPaymaster = new InterChainPaymaster(entrypoint, address(1), address(2));
     }
 
     function test_userOp() public {
@@ -205,7 +205,8 @@ contract ReceiverAccountTest is Test {
         console.log("Balance before", address(interchainPaymaster).balance, "source", address(sourceAccount).balance);
         console.log("receiver", address(receiverAccount).balance);
         console.log("Sink", address(sink).balance);
-        interchainPaymaster.frontRunUserOp(address(sourceAccount), userOp, 2 ether);
+        interchainPaymaster.frontRunUserOp('', '', userOp, 2 ether);
+        // interchainPaymaster.frontRunUserOp('', address(sourceAccount), userOp, 2 ether);
         console.log("Balance After", address(interchainPaymaster).balance, "source", address(sourceAccount).balance);
         console.log("receiver", address(receiverAccount).balance);
         console.log("Sink", address(sink).balance);

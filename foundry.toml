@@ -2,6 +2,15 @@
 src = 'contracts/src'
 test = 'contracts/test'
 out = 'contracts/out'
+script = 'contracts/script'
 libs = ['contracts/lib']
+
+[rpc_endpoints]
+goerli = "${GOERLI_RPC_URL}"
+op-goerli = "${OP_GOERLI_RPC_URL}"
+
+[etherscan]
+goerli = { key = "NDDPPG7G7XS9HZ3W3679453SHAREW91BFI", url = "https://api-goerli.etherscan.io/" }
+op-goerli = { key = "B1TY456C3G9QRTMRWFGH4IGXEKEYK2HY3K", url = "https://api-goerli-optimistic.etherscan.io/" }
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

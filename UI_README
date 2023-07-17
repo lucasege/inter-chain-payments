@@ -14,3 +14,7 @@ Basic design:
 6. Create and sign intent to buy NFT with L1 liquidity, send this to paymaster, the paymaster will then verify your claim
 7. Intent is frontrun and processed on L2
 8. Paymaster refunds itself
+
+Extension:
+1. Build a metamask snap to show the intent with a clean signing UI that would show a PoC of this working
+2. Bridge assets between Eth and COsmos app-chains? Stargaze NFTs

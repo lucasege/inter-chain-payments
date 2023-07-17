@@ -12,7 +12,8 @@ contract NFTTestDeploy is Script {
 
     function run() public {
         vm.startBroadcast();
-        SimpleNFT s = new SimpleNFT{salt: salt}();
+        // SimpleNFT s = new SimpleNFT{salt: salt}();
+        SimpleNFT s = new SimpleNFT();
         console.log("SimpleNFT address", address(s));
     }
 }

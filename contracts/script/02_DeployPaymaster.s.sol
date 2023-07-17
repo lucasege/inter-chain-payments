@@ -7,16 +7,18 @@ import "account-abstraction/interfaces/IEntryPoint.sol";
 
 contract InterChainPaymasterScript is Script {
     // 0x30426D33a78afdb8788597D5BFaBdADc3Be95698
-    bytes32 constant salt = keccak256("InterChainPaymaster2");
-
-    address entrypoint = 0xDF0CDa100E71C1295476B80f4bEa713D89C32691; // Deterministic deployment
+    bytes32 constant salt = keccak256("InterChainPaymaster");
 
     function setUp() public {}
 
     function run() public {
-        vm.startBroadcast();
+        address entrypoint = vm.envAddress("ENTRYPOINT");
+        address axelarGateway = vm.envAddress("AXELAR_GATEWAY");
+        address axelarGasService = vm.envAddress("AXELAR_GAS_SERVICE");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
         IEntryPoint e = IEntryPoint(entrypoint);
-        InterChainPaymaster p = new InterChainPaymaster(e);
+        InterChainPaymaster p = new InterChainPaymaster(e, axelarGateway, axelarGasService);
         console.log("Paymaster address", address(p));
     }
 }

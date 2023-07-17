@@ -7,7 +7,7 @@ import "../src/InterChainPaymaster.sol";
 import "account-abstraction/interfaces/IEntryPoint.sol";
 
 contract TestTokenDeploy is Script {
-    address payable interchainPaymaster = payable(0x12456Fa31e57F91B70629c1196337074c966492a); // Deterministic deployment
+    address payable interchainPaymaster = payable(0x87876F9407212eb99127CD6eab7fbBC20D45CDc9); // Deterministic deployment
     address entrypoint = 0xDF0CDa100E71C1295476B80f4bEa713D89C32691; // Deterministic deployment
     address receiverAccount = 0xB9D6057f99802bc89B376733968619Eeb11B6B64; // can change;
     function setUp() public {}
