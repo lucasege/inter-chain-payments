@@ -1,115 +1,34 @@
-This is a [wagmi](https://wagmi.sh) + [Foundry](https://book.getfoundry.sh/) + [Vite](https://vitejs.dev/) project bootstrapped with [`create-wagmi`](https://github.com/wagmi-dev/wagmi/tree/main/packages/create-wagmi)
-
-# Getting Started
-
-Run `npm run dev` in your terminal, and then open [localhost:5173](http://localhost:5173) in your browser.
-
-Once the webpage has loaded, changes made to files inside the `src/` directory (e.g. `src/App.tsx`) will automatically update the webpage.
-
-# Generating ABIs & React Hooks
-
-This project comes with `@wagmi/cli` built-in, which means you can generate wagmi-compatible (type safe) ABIs & React Hooks straight from the command line.
-
-To generate ABIs & Hooks, follow the steps below.
-
-## Install Foundry
-
-First, you will need to install [Foundry](https://book.getfoundry.sh/getting-started/installation) in order to build your smart contracts. This can be done by running the following command:
+## Inter-chain payments
+The purpose of this repo is a proof of concept of a design derived from this talk by [Uma from Succint.xyz](https://www.youtube.com/watch?v=G0nFyq9DDPw&list=PLrTmn1_Dm_UpwHsAAyn3L0f2OZUA02YjC&index=8).
 
 ```
-curl -L https://foundry.paradigm.xyz | bash
+This is nowhere near production-level code and should be treated as a hackathon-style proof of concept
 ```
 
-## Generate code
+Succinct is working on a similar design that utilizes a somewhat centralized RPC provider to do the proof of liquidity and transfering of assets. I wanted to take a stab at implementing this using a paymaster from the ERC-4337 Account Abstraction design.
 
-To generate ABIs & React Hooks from your Foundry project (in `./contracts`), you can run:
+The idea here is that users have one `SourceAccount` on the `Source` chain (probably ETH L1). They would create this SCW `contracts/src/SourceAccount.sol` once and deposit some assets into it. This same user would then perform some actions on a `Remote` chain that would utilize these assets. This would be possible by utilizing the `contracts/src/ReceiverAccount.sol` design which is a 4337-enabled SCW that would create a `UserOperation` with a custom Signature (`contracts/src/InterChainSigData.sol`) that can be verified on both the `Remote` and `Source` chains.
 
-```
-npm run wagmi
-```
+A 3rd-party operator deploys the `InterChainPaymaster` (permissionlessly) which could accept these `UserOperation`s, verify thme on the `Remote` chain and then make a cross-chain call to also verify this on the `Source` chain. This verification verifies that the `UserOp` is valid and also that if this op is executed on the `Remote` chain that the `Paymaster` will be able to pull a rebate from the `Source` chain's vault. This rebate would cover both the assets for the op and some fee to incentivize the paymaster.
 
-This will use the wagmi config (`wagmi.config.ts`) to generate a `src/generated.ts` file which will include your ABIs & Hooks that you can start using in your project.
+This allows users to utilize L1 liquidity without needing to explicitly bridge assets. This removes some UX annoyances (bridges are unwieldy) and reduces the risks associated with using a traditional bridge with all locked funds in a single contract (this is closer to a liquidity network bridge in that sense).
 
-[Here is an example](./src/components/Counter.tsx) of where Hooks from the generated file is being used.
+### Current status
+* [x] Deploy all contracts on source and remote chains
+* [x] Finished UserOp construction on the frontend and verification on both chains under local development (Not using bridging)
+* [x] Signing UserOps using Metamask
+* [x] Deployed and tested on ETH Goerli L1 (Source) with OP Goerli L2 (Remote)
+* [ ] Fully implement cross-chain mechanism (Axelar bridge to verify all claims)
 
-# Deploying Contracts
 
-To deploy your contracts to a network, you can use Foundry's [Forge](https://book.getfoundry.sh/forge/) – a command-line tool to tests, build, and deploy your smart contracts.
+### Current limitations
+* The `SourceAccount` currently isn't really a wallet, it is moreso a vault that can be deposited into but not withdrawn from. This makes the verification logic simpler but is generally less useful. A simple extension would be to add a withdrawal timer, i.e. owners can request a withdraw and receive their assets after a fixed period (to prevent rugging).
+* The `SourceAccount` also currently doesn't make the necessary cross-chain verification to see that the `UserOp` was actually executed on the remote chain. This would require another state management contract on the remote chain that tracks executed UserOps and is kind of a hassle.
+* The `InterChainPaymaster` currently just calls into the `SourceAccount` to verify a user op but doesn't include the necessary infra to actually check this claim. This will require a round-trip call and some more state management.
 
-You can read a more in-depth guide on using Forge to deploy a smart contract [here](https://book.getfoundry.sh/forge/deploying), but we have included a simple script in the `package.json` to get you started.
+### Extensions
+* I'd like to implement a simple metamask snap for signing UserOp signatures so that users aren't just blindly signing hex data.
+ 
+At this point the proof of concept has been finished (I have all components working) and so now this is just an exercise in deployment and orchestrating bridges which has taken up too much time so far. Will finish this in the future.
 
-Below are the steps to deploying a smart contract to Ethereum Mainnet using Forge:
-
-## Install Foundry
-
-Make sure you have Foundry installed & set up.
-
-[See the above instructions](#install-foundry).
-
-## Set up environment
-
-You will first need to set up your `.env` to tell Forge where to deploy your contract.
-
-Go ahead and open up your `.env` file, and enter the following env vars:
-
-- `ETHERSCAN_API_KEY`: Your Etherscan API Key.
-- `FORGE_RPC_URL`: The RPC URL of the network to deploy to.
-- `FORGE_PRIVATE_KEY`: The private key of the wallet you want to deploy from.
-
-## Deploy contract
-
-You can now deploy your contract!
-
-```
-npm run deploy
-```
-
-# Developing with Anvil (Mainnet Fork)
-
-Let's combine the above sections and use Anvil alongside our development environment to use our contracts (`./contracts`) against an Ethereum Mainnet fork.
-
-## Install Foundry
-
-Make sure you have Foundry installed & set up.
-
-[See the above instructions](#install-foundry).
-
-## Start dev server
-
-Run the command:
-
-```
-npm run dev:foundry
-```
-
-This will:
-
-- Start a Next.js dev server,
-- Start the `@wagmi/cli` in [**watch mode**](https://wagmi.sh/cli/commands/generate#options) to listen to changes in our contracts, and instantly generate code,
-- Start an Anvil instance (Mainnet Fork) on an RPC URL.
-
-## Deploy our contract to Anvil
-
-Now that we have an Anvil instance up and running, let's deploy our smart contract to the Anvil network:
-
-```
-pnpm run deploy:anvil
-```
-
-## Start developing
-
-Now that your contract has been deployed to Anvil, you can start playing around with your contract straight from the web interface!
-
-Head to [localhost:5173](http://localhost:5173) in your browser, connect your wallet, and try increment the counter on the Foundry chain.
-
-> Tip: If you import an Anvil private key into your browser wallet (MetaMask, Coinbase Wallet, etc) – you will have 10,000 ETH to play with 😎. The private key is found in the terminal under "Private Keys" when you start up an Anvil instance with `npm run dev:foundry`.
-
-# Learn more
-
-To learn more about [Vite](https://vitejs.dev/), [Foundry](https://book.getfoundry.sh/) or [wagmi](https://wagmi.sh), check out the following resources:
-
-- [Foundry Documentation](https://book.getfoundry.sh/) – learn more about the Foundry stack (Anvil, Forge, etc).
-- [wagmi Documentation](https://wagmi.sh) – learn about wagmi Hooks and API.
-- [wagmi Examples](https://wagmi.sh/examples/connect-wallet) – a suite of simple examples using wagmi.
-- [@wagmi/cli Documentation](https://wagmi.sh/cli) – learn more about the wagmi CLI.
-- [Vite Documentation](https://vitejs.dev/) – learn about Vite features and API.
+Cross-chain dev + account abstraction makes for a really complex and slow dev cycle.
