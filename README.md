@@ -15,9 +15,11 @@ This allows users to utilize L1 liquidity without needing to explicitly bridge a
 
 ### Current status
 * [x] Deploy all contracts on source and remote chains
+* [x] Very basic UI to show each contract and allow for deposits and creating user Ops
 * [x] Finished UserOp construction on the frontend and verification on both chains under local development (Not using bridging)
 * [x] Signing UserOps using Metamask
 * [x] Deployed and tested on ETH Goerli L1 (Source) with OP Goerli L2 (Remote)
+* [x] Simple PoC of buying an NFT on the remote chain using liquidity from the source chain
 * [ ] Fully implement cross-chain mechanism (Axelar bridge to verify all claims)
 
 
