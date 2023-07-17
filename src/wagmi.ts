@@ -39,13 +39,45 @@ export const localPolygonGanache = {
   },
 } as const satisfies Chain
 
-export const sourceChainId = localEthGanache.id;
-export const remoteChainId = localPolygonGanache.id;
+// export const localPolygonGanache = {
+//   id: 2504,
+//   name: 'Polygon Ganache',
+//   network: 'Ganache',
+//   nativeCurrency: {
+//     decimals: 18,
+//     name: 'gMatic',
+//     symbol: 'gMAT',
+//   },
+//   rpcUrls: {
+//     public: { http: ['http://127.0.0.1:8500/4'] },
+//     default: { http: ['http://127.0.0.1:8500/4'] },
+//   },
+// } as const satisfies Chain
+
+export const opGoerli = {
+  id: 420,
+  name: 'Optimism Goerli',
+  network: 'Testnet',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Goerli ETH',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    public: { http: ['https://goerli.optimism.io'] },
+    default: { http: ['https://goerli.optimism.io'] },
+  },
+} as const satisfies Chain
+
+export const sourceChainId = goerli.id; // Eth Goerli
+export const remoteChainId = opGoerli.id; // OP Goerli
+// export const sourceChainId = localEthGanache.id;
+// export const remoteChainId = localPolygonGanache.id;
 // export const remoteChainId = 31337;
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [
-    mainnet,
+    mainnet, goerli, opGoerli,
     ...(import.meta.env?.MODE === 'development' ? [goerli, foundry] : []),
     localEthGanache, localPolygonGanache
   ],
